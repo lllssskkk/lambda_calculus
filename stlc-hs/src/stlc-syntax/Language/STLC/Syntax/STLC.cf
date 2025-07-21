@@ -1,0 +1,75 @@
+-- programs ------------------------------------------------
+
+entrypoints Prog ;
+
+Program.   Prog ::= Term ;
+
+-- Types ---------------------------------------------------
+
+separator  Type "," ;
+
+IntType.               Type ::= "Int" ;
+
+BoolType.              Type ::= "Boolean" ;
+
+ArrowType.             Type ::=  Type "->" Type;
+
+-- Integer ---------------------------------------------------
+Succ.     Int ::=  "succ" Int;
+Zero.     Int ::=  "zero";
+
+-- Atoms -----------------------------------------------------
+ALitTrue.  Atom ::= "true" ;
+
+ALitFalse. Atom ::= "false" ;
+
+ALitInt.   Atom ::= Int;
+
+AVar.      Atom ::= Ident ;
+
+ATerm.     Atom ::= "(" Term ")";
+
+
+-- Expression ----------------------------------------------
+ApplicationAtom.  LeftAssociativeApplication ::= Atom;
+
+Application.      LeftAssociativeApplication ::= LeftAssociativeApplication Atom;
+
+
+-- Term ---------------------------------------------------------------
+
+ApplicationLeft. Term ::= LeftAssociativeApplication;
+
+LetIn.           Term ::= "let" Ident "=" Term "in" Term;
+
+IfThenElse.      Term ::= "if" Term "then" Term "else" Term;
+
+LambdaAbs.       Term ::= "lam" Ident Type "." Term;
+
+Tuple.           Term ::= "{" Term "," Term "}";
+
+Fst.             Term ::= "first" Term;
+
+Snd.             Term ::= "second" Term; 
+
+-- FixOp.           Term ::= Term;
+
+-- Nil.             Term ::= "nil" "[" Type "]";
+
+-- Cons.            Term ::= "[" Type "]" Term Term;
+
+-- IsNil.           Term ::= "isNil" "[" Type "]" Term; 
+
+-- Head.            Term ::= "head" "[" Type "]" Term; 
+
+-- Tail.            Term ::= "tail" "[" Type "]" Term; 
+
+
+-- comments ------------------------------------------------
+
+comment    "#" ;
+
+comment    "//" ;
+
+comment    "/*" "*/" ;
+

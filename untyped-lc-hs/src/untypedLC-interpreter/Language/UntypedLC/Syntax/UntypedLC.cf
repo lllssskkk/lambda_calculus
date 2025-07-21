@@ -1,0 +1,51 @@
+-- programs ------------------------------------------------
+
+entrypoints Prog ;
+
+Program.   Prog ::= Term ;
+
+
+
+-- Atoms -----------------------------------------------------
+
+AVar.      Atom ::= Ident;
+
+ATerm.     Atom  ::= "(" Term ")";
+
+-- Expression ----------------------------------------------
+ApplicationAtom.  Application ::= Atom;
+
+AApplication.     Application ::= Application Atom;
+
+
+-- Term ---------------------------------------------------------------
+
+ApplicationTerm.     Term ::= Application;
+
+LetInTerm.           Term ::= "let" Ident "=" Term "in" Term;
+
+LambdaAbsTerm.       Term ::= "lam" Ident "." Term;
+
+
+
+-- FixOp.           Term ::= Term;
+
+-- Nil.             Term ::= "nil" "[" Type "]";
+
+-- Cons.            Term ::= "[" Type "]" Term Term;
+
+-- IsNil.           Term ::= "isNil" "[" Type "]" Term; 
+
+-- Head.            Term ::= "head" "[" Type "]" Term; 
+
+-- Tail.            Term ::= "tail" "[" Type "]" Term; 
+
+
+-- comments ------------------------------------------------
+
+comment    "#" ;
+
+comment    "//" ;
+
+comment    "/*" "*/" ;
+

@@ -1,0 +1,8 @@
+let zero = lam s . lam z . z in 
+let succ = lam n . lam s . lam z . s (n s z) in
+let true  = lam t . lam f . t in
+let false = lam t . lam f . f in
+let if    = lam b . lam x . lam y . b x y in
+let isZero = lam n . n (lam a . false) true in 
+let pred = lam n . lam f . lam x . n (lam g . lam h . h (g f)) (lam u .x) (lam u .u) in
+(pred(succ (succ zero)))

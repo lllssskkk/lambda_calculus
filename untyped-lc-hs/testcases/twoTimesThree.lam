@@ -1,0 +1,6 @@
+let mult = lam m . lam n . lam s . m (n s) in
+let zero = lam s . lam z . z in
+let succ = lam n . lam s . lam z . s (n s z) in
+let two   = succ (succ zero) in
+let three = succ two in
+mult two three

@@ -1,0 +1,1 @@
+(lam w . lam y . lam x . y ( w y x))(lam s . lam z . z)

@@ -1,0 +1,3 @@
+let succ = lam w . lam y . lam x . y ( w y x) in 
+let zero = lam s . lam z . z in 
+succ zero

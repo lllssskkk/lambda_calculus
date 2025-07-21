@@ -1,0 +1,6 @@
+let pair = lam x . lam y . lam f . f x y in
+let fst  = lam p . p (lam x . lam y . x) in
+let snd  = lam p . p (lam x . lam y . y) in
+let zero = lam s . lam z . z in
+let one  = lam s . lam z . s z in
+snd (pair one zero)               // yields Church 1
