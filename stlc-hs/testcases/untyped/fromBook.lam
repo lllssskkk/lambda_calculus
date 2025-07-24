@@ -1,0 +1,1 @@
+(lam x:Bool. if x then true else false)((lam x : Bool . if x then false else true) (true))

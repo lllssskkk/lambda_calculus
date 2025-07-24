@@ -1,0 +1,6 @@
+let plus = lam m . lam n . lam s . lam z . m s (n s z) in
+let zero = lam s . lam z . z in
+let succ = lam n . lam s . lam z . s (n s z) in
+let two   = succ (succ zero) in
+let three = succ two in
+plus two three

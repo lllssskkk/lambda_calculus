@@ -1,0 +1,6 @@
+let zero = lam s . lam z . z in 
+let succ = lam n . lam s . lam z . s (n s z) in
+let true  = lam t . lam f . t in
+let false = lam t . lam f . f in
+let isZero = lam n . n (lam a . false) true in 
+isZero (succ zero)

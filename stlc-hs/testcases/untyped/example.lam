@@ -1,0 +1,16 @@
+let true  = lam t . lam f . t in
+let false = lam t . lam f . f in
+let zero = lam s . lam z . z in
+let isZero = lam n . n (lam a . false) true in 
+isZero zero
+
+<closure λ{Ident "w"} . 0 with env: 
+[
+  <closure λ{Ident "n"} . ((0 λ {Ident "a"}. 2) 2) 
+    with env: [<closure λ{Ident "t"} . λ {Ident "f"}. 0 
+      with env: [<closure λ{Ident "t"} . λ {Ident "f"}. 1 with env: []>]>
+             , <closure λ{Ident "t"} . λ {Ident "f"}. 1 with env: []>]
+               >, 
+  <closure λ{Ident "t"} . λ {Ident "f"}. 0 
+    with env: [<closure λ{Ident "t"} . λ {Ident "f"}. 1 with env: []>]>,
+  <closure λ{Ident "t"} . λ {Ident "f"}. 1 with env: []>]>

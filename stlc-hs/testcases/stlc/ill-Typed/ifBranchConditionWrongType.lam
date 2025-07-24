@@ -1,0 +1,1 @@
+if (lam x : Nat . x) then zero else false
