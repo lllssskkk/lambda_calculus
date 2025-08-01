@@ -64,7 +64,7 @@ data Result = BigStepCBVResult Value | BigStepNbeCBVResult DebruijnExpr | SmallS
 
 main :: IO ()
 main = do
-  chosen <- execParser opts -- Strategy, not String
+  _chosen <- execParser opts -- Strategy, not String
   putStrLn "Waiting for input on stdin..."
   input <- getContents
 

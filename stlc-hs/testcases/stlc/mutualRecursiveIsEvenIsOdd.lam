@@ -1,0 +1,9 @@
+let ff = lam ieio : {Nat -> Bool, Nat -> Bool}. {lam x : Nat . if (isZero x) then true else ((second ieio) (pred x)),
+      lam  x : Nat . if (isZero x) then false else ((first ieio) (pred x))} in
+let tuple = fix ff in 
+let isEven = first tuple in 
+let isOdd = second tuple in 
+let one = succ (zero) in 
+let two = succ one in 
+let three = succ two in 
+isOdd two

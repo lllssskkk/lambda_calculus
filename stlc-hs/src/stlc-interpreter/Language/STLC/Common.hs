@@ -1,4 +1,4 @@
-module Language.STLC.Common where
+module Language.STLC.Common (guardM) where
 
 import Control.Monad.Except (MonadError (throwError))
 

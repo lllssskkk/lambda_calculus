@@ -2,7 +2,8 @@
   description = "template";
 
   inputs = {
-    nixpkgs.url = "github:Nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "https://mirrors.tuna.tsinghua.edu.cn/nix-channels/nixos-unstable/nixexprs.tar.xz";
+    # nixpkgs.url = "https://mirrors.ustc.edu.cn/nix-channels/nixos-unstable/nixexprs.tar.xz";
     flake-utils.url = "github:numtide/flake-utils";
   };
   outputs =
@@ -32,7 +33,6 @@
             cabal-install
             alex
             happy
-            wavebox
           ])
           ++ [
             pkgs.haskell.compiler.ghc9102

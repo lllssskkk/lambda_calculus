@@ -164,12 +164,21 @@ instance Print (Language.STLC.Syntax.Generated.AbsSTLC.Term' a) where
     Language.STLC.Syntax.Generated.AbsSTLC.SuccTerm _ term -> prPrec i 0 (concatD [doc (showString "succ"), prt 0 term])
     Language.STLC.Syntax.Generated.AbsSTLC.ZeroTerm _ -> prPrec i 0 (concatD [doc (showString "zero")])
     Language.STLC.Syntax.Generated.AbsSTLC.PredTerm _ term -> prPrec i 0 (concatD [doc (showString "pred"), prt 0 term])
+    Language.STLC.Syntax.Generated.AbsSTLC.IsZeroTerm _ term -> prPrec i 0 (concatD [doc (showString "isZero"), prt 0 term])
     Language.STLC.Syntax.Generated.AbsSTLC.PairTerm _ term1 term2 -> prPrec i 0 (concatD [doc (showString "{"), prt 0 term1, doc (showString ","), prt 0 term2, doc (showString "}")])
     Language.STLC.Syntax.Generated.AbsSTLC.FstTerm _ term -> prPrec i 0 (concatD [doc (showString "first"), prt 0 term])
     Language.STLC.Syntax.Generated.AbsSTLC.SndTerm _ term -> prPrec i 0 (concatD [doc (showString "second"), prt 0 term])
+    Language.STLC.Syntax.Generated.AbsSTLC.FixTerm _ term -> prPrec i 0 (concatD [doc (showString "fix"), prt 0 term])
+    Language.STLC.Syntax.Generated.AbsSTLC.IsSuccTerm _ term -> prPrec i 0 (concatD [doc (showString "isSucc"), prt 0 term])
+    Language.STLC.Syntax.Generated.AbsSTLC.IsPredTerm _ term -> prPrec i 0 (concatD [doc (showString "isPred"), prt 0 term])
 
 instance Print (Language.STLC.Syntax.Generated.AbsSTLC.Type' a) where
   prt i = \case
-    Language.STLC.Syntax.Generated.AbsSTLC.Arrow _ type_1 type_2 -> prPrec i 1 (concatD [prt 1 type_1, doc (showString "->"), prt 2 type_2])
-    Language.STLC.Syntax.Generated.AbsSTLC.Nat _ -> prPrec i 2 (concatD [doc (showString "Nat")])
-    Language.STLC.Syntax.Generated.AbsSTLC.Bool _ -> prPrec i 2 (concatD [doc (showString "Bool")])
+    Language.STLC.Syntax.Generated.AbsSTLC.Arrow _ basetype type_ -> prPrec i 0 (concatD [prt 0 basetype, doc (showString "->"), prt 0 type_])
+    Language.STLC.Syntax.Generated.AbsSTLC.Base _ basetype -> prPrec i 0 (concatD [prt 0 basetype])
+
+instance Print (Language.STLC.Syntax.Generated.AbsSTLC.BaseType' a) where
+  prt i = \case
+    Language.STLC.Syntax.Generated.AbsSTLC.Pair _ type_1 type_2 -> prPrec i 0 (concatD [doc (showString "{"), prt 0 type_1, doc (showString ","), prt 0 type_2, doc (showString "}")])
+    Language.STLC.Syntax.Generated.AbsSTLC.Nat _ -> prPrec i 0 (concatD [doc (showString "Nat")])
+    Language.STLC.Syntax.Generated.AbsSTLC.Bool _ -> prPrec i 0 (concatD [doc (showString "Bool")])

@@ -9,8 +9,7 @@ import Control.Monad.State (MonadState (get), State, runState)
 import Data.Either (fromLeft, fromRight, isRight)
 import Data.List (elemIndex)
 import Data.Maybe (fromJust, isNothing)
-import GHC.Num (integerToWord)
-import Language.STLC.Common
+import Language.STLC.Common (guardM)
 import Language.STLC.Syntax qualified as Syn
 
 data Typ where
@@ -33,7 +32,7 @@ instance Show DeBruijnNum where
   show :: DeBruijnNum -> String
   show ((DeBruijnSucc _pos i)) = "(succ " ++ show i ++ ")"
   show ((DeBruijnPred _pos i)) = "(pred " ++ show i ++ ")"
-  show ((DeBruijnZero pos)) = "zero"
+  show ((DeBruijnZero _pos)) = "zero"
 
 data DebruijnExpr where
   DeBruijnIndex :: Syn.BNFC'Position -> Int -> DebruijnExpr
@@ -41,6 +40,7 @@ data DebruijnExpr where
   DeBruijnApp :: Syn.BNFC'Position -> DebruijnExpr -> DebruijnExpr -> DebruijnExpr
   DeBruijnLet :: Syn.BNFC'Position -> (Syn.Ident, DebruijnExpr) -> DebruijnExpr -> DebruijnExpr
   DeBruijnIfThenElse :: Syn.BNFC'Position -> DebruijnExpr -> DebruijnExpr -> DebruijnExpr -> DebruijnExpr
+  DeBruijnFix :: Syn.BNFC'Position -> DebruijnExpr -> DebruijnExpr
   -- Tuple
   DeBruijnPair :: Syn.BNFC'Position -> DebruijnExpr -> DebruijnExpr -> DebruijnExpr
   DeBruijnFirst :: Syn.BNFC'Position -> DebruijnExpr -> DebruijnExpr
@@ -50,6 +50,9 @@ data DebruijnExpr where
   DeBruijnFalse :: Syn.BNFC'Position -> DebruijnExpr
   -- Num
   DeBruijnNum :: DeBruijnNum -> DebruijnExpr
+  DeBruijnIsZero :: Syn.BNFC'Position -> DebruijnExpr -> DebruijnExpr
+  DeBruijnIsSucc :: Syn.BNFC'Position -> DebruijnExpr -> DebruijnExpr
+  DeBruijnIsPred :: Syn.BNFC'Position -> DebruijnExpr -> DebruijnExpr
 
 instance Eq DebruijnExpr where
   (==) :: DebruijnExpr -> DebruijnExpr -> Bool
@@ -57,7 +60,7 @@ instance Eq DebruijnExpr where
   (==) (DeBruijnAbs _ _ _ expr1) (DeBruijnAbs _ _ _ expr2) = expr1 == expr2
   (==) (DeBruijnApp _ f1 arg1) (DeBruijnApp _ f2 arg2) = f1 == f2 && arg1 == arg2
   (==) (DeBruijnLet _ (_, binding1) body1) (DeBruijnLet _ (_, binding2) body2) = binding1 == binding2 && body1 == body2
-  (==) _ _ = False
+  (==) _ _ = undefined
 
 instance Show DebruijnExpr where
   show :: DebruijnExpr -> String
@@ -69,16 +72,20 @@ instance Show DebruijnExpr where
     "(" ++ show f ++ " " ++ show arg ++ ")"
   show (DeBruijnLet _ (ident, expr) body) =
     "let " ++ show ident ++ " = " ++ show expr ++ " in " ++ show body
+  show (DeBruijnIfThenElse _ cond thenBranch elseBranch) =
+    "if " ++ show cond ++ " then " ++ show thenBranch ++ " else " ++ show elseBranch
+  show (DeBruijnFix _ f) = "fix " ++ show f
   show (DeBruijnTrue _) =
     "true"
   show (DeBruijnFalse _) =
     "false"
-  show (DeBruijnIfThenElse _ cond thenBranch elseBranch) =
-    "if " ++ show cond ++ " then " ++ show thenBranch ++ " else " ++ show elseBranch
-  show (DeBruijnPair _ fst snd) = "{" ++ show fst ++ " , " ++ show snd ++ "}"
-  show (DeBruijnFirst _ elem) = "{first(" ++ show elem ++ ")}"
-  show (DeBruijnSecond _ elem) = "{second(" ++ show elem ++ ")}"
+  show (DeBruijnPair _ first second) = "{" ++ show first ++ " , " ++ show second ++ "}"
+  show (DeBruijnFirst _ pair) = "{first(" ++ show pair ++ ")}"
+  show (DeBruijnSecond _ pair) = "{second(" ++ show pair ++ ")}"
   show (DeBruijnNum num) = show num
+  show (DeBruijnIsZero _pos num) = "isZero(" ++ show num ++ ")"
+  show (DeBruijnIsSucc _pos num) = "isSucc(" ++ show num ++ ")"
+  show (DeBruijnIsPred _pos num) = "isPred(" ++ show num ++ ")"
 
 type NamingContext = [Syn.Ident]
 
@@ -87,9 +94,17 @@ data DebruijnError = NegativeNaturalNumber String | UnboundedVariable String der
 type App a = ExceptT DebruijnError (State NamingContext) a
 
 convertTyp :: Syn.Type -> Typ
-convertTyp (Syn.Nat _pos) = TNat
-convertTyp (Syn.Bool _pos) = TBool
-convertTyp (Syn.Arrow _pos f arg) = TArrow (convertTyp f) (convertTyp arg)
+-- convertTyp (Syn.Nat _pos) = TNat
+-- convertTyp (Syn.Bool _pos) = TBool
+convertTyp (Syn.Arrow _pos f arg) = TArrow (convertBaseTyp f) (convertTyp arg)
+convertTyp (Syn.Base _pos base) = convertBaseTyp base
+
+convertBaseTyp :: Syn.BaseType -> Typ
+convertBaseTyp (Syn.Nat _pos) = TNat
+convertBaseTyp (Syn.Bool _pos) = TBool
+convertBaseTyp (Syn.Pair _pos firstTyp secondTyp) = TPair (convertTyp firstTyp) (convertTyp secondTyp)
+
+-- convertTyp (Syn.Pair _pos firstTyp secondTyp) = TPair (convertTyp firstTyp) (convertTyp secondTyp)
 
 debruijnization :: Syn.Prog -> Either DebruijnError DebruijnExpr
 debruijnization (Syn.Program _pos term) = do
@@ -118,6 +133,9 @@ debruijnizeTerm (Syn.IfTerm pos condition thenBranch elseBranch) = do
   thenBranch' <- debruijnizeTerm thenBranch
   elseBranch' <- debruijnizeTerm elseBranch
   pure $ DeBruijnIfThenElse pos condition' thenBranch' elseBranch'
+debruijnizeTerm (Syn.FixTerm pos f) = do
+  f' <- debruijnizeTerm f
+  pure $ DeBruijnFix pos f'
 debruijnizeTerm (Syn.TrueTerm pos) = pure $ DeBruijnTrue pos
 debruijnizeTerm (Syn.FalseTerm pos) = pure $ DeBruijnFalse pos
 debruijnizeTerm (Syn.SuccTerm pos num) = do
@@ -128,10 +146,19 @@ debruijnizeTerm (Syn.PredTerm pos num) = do
   pure . DeBruijnNum $ DeBruijnPred pos num'
 debruijnizeTerm (Syn.ZeroTerm pos) = do
   pure . DeBruijnNum $ DeBruijnZero pos
-debruijnizeTerm (Syn.PairTerm pos fst snd) = do
-  fst' <- debruijnizeTerm fst
-  snd' <- debruijnizeTerm snd
-  pure $ DeBruijnPair pos fst' snd'
+debruijnizeTerm (Syn.PairTerm pos first second) = do
+  first' <- debruijnizeTerm first
+  second' <- debruijnizeTerm second
+  pure $ DeBruijnPair pos first' second'
+debruijnizeTerm (Syn.IsZeroTerm pos term) = do
+  term' <- debruijnizeTerm term
+  pure $ DeBruijnIsZero pos term'
+debruijnizeTerm (Syn.IsSuccTerm pos term) = do
+  term' <- debruijnizeTerm term
+  pure $ DeBruijnIsSucc pos term'
+debruijnizeTerm (Syn.IsPredTerm pos term) = do
+  term' <- debruijnizeTerm term
+  pure $ DeBruijnIsPred pos term'
 debruijnizeTerm (Syn.FstTerm pos element) = do
   element' <- debruijnizeTerm element
   pure $ DeBruijnFirst pos element'

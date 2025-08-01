@@ -1,0 +1,18 @@
+let y = lam f . (lam x . f (x x)) (lam x . f (x x)) in
+let zero = lam s . lam z . z in
+let succ = lam n . lam s . lam z . s (n s z) in
+let pair = lam x . lam y . lam f . f x y in
+let fst  = lam p . p (lam x . lam y . x) in
+let snd  = lam p . p (lam x . lam y . y) in
+let true  = lam t . lam f . t in
+let false = lam t . lam f . f in
+let if    = lam b . lam x . lam y . b x y in
+let mult = lam m . lam n . lam s . m (n s) in
+let isZero = lam n . n (lam a . false) true in 
+let pred = lam n . lam f . lam x . n (lam g . lam h . h (g f)) (lam u .x) (lam u .u) in
+let factP = lam f . lam n .  if (isZero n) (succ zero) (mult n (f f (pred n)) ) in 
+let fact = factP factP in
+let fix = lam f . ((lam x . f (lam y . x x y)) (lam x . f (lam y . x x y))) in 
+let g = lam fct. lam n. if (isZero n) (succ zero) (mult n (fct (pred n))) in 
+let factFix = fix g in 
+factFix (succ (succ (succ zero)))

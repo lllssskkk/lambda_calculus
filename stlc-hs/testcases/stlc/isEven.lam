@@ -1,0 +1,3 @@
+let ff = lam ie : Nat -> Bool. (lam x : Nat . if (isZero x) then true else (if (isZero (pred x)) then false else (ie (pred (pred x))))) in
+let isEven = fix ff in 
+isEven (succ (zero))

@@ -60,10 +60,9 @@ flag dev
 
 common warnings
   ghc-options:
-    -Wcompat -Wincomplete-uni-patterns -Wmissing-deriving-strategies
-    -Wredundant-constraints -Wmissing-home-modules
+    -Wall -Wcompat -Wincomplete-uni-patterns -Wredundant-constraints
+    -Wmissing-home-modules -fwarn-unused-imports
 
-  --  -Wmissing-export-lists -fwarn-unused-imports
 
   if !flag(dev)
     ghc-options: -Werror

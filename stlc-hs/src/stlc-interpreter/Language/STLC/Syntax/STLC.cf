@@ -1,3 +1,4 @@
+
 -- programs ------------------------------------------------
 
 entrypoints Prog ;
@@ -40,19 +41,33 @@ ZeroTerm.            Term ::= "zero";
 
 PredTerm.            Term ::= "pred" Term; 
 
+IsZeroTerm.          Term ::= "isZero" Term; 
+
 PairTerm.            Term ::= "{" Term "," Term "}";
 
 FstTerm.             Term ::= "first" Term; 
 
 SndTerm.             Term ::= "second" Term;
 
+FixTerm.             Term ::= "fix" Term; 
+
+IsSuccTerm.          Term ::= "isSucc" Term; 
+
+IsPredTerm.          Term ::= "isPred" Term;
+
+
+
 -- Types ---------------------------------------------------
+-- Lowest precedence (whole Type)
+Arrow.    Type  ::= BaseType "->" Type ;
+Base.     Type  ::= BaseType ;
 
-Arrow.             Type1 ::= Type1 "->" Type2; 
+-- Higher precedence
+Pair.     BaseType  ::= "{" Type "," Type "}" ;
+Nat.      BaseType  ::= "Nat" ;
+Bool.     BaseType  ::= "Bool" ;
 
-Nat.               Type2 ::= "Nat" ;
 
-Bool.              Type2 ::= "Bool" ;
 
 coercions  Type 2;
 

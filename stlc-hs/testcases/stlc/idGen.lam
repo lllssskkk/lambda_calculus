@@ -1,0 +1,4 @@
+let idGen = lam f : Nat -> Nat . lam x : Nat . x
+in
+let id = fix idGen in
+id (succ (succ zero))

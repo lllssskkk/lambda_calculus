@@ -35,18 +35,22 @@ import Language.STLC.Syntax.Generated.LexSTLC
   'else'   { PT _ (TS _ 10) }
   'false'  { PT _ (TS _ 11) }
   'first'  { PT _ (TS _ 12) }
-  'if'     { PT _ (TS _ 13) }
-  'in'     { PT _ (TS _ 14) }
-  'lam'    { PT _ (TS _ 15) }
-  'let'    { PT _ (TS _ 16) }
-  'pred'   { PT _ (TS _ 17) }
-  'second' { PT _ (TS _ 18) }
-  'succ'   { PT _ (TS _ 19) }
-  'then'   { PT _ (TS _ 20) }
-  'true'   { PT _ (TS _ 21) }
-  'zero'   { PT _ (TS _ 22) }
-  '{'      { PT _ (TS _ 23) }
-  '}'      { PT _ (TS _ 24) }
+  'fix'    { PT _ (TS _ 13) }
+  'if'     { PT _ (TS _ 14) }
+  'in'     { PT _ (TS _ 15) }
+  'isPred' { PT _ (TS _ 16) }
+  'isSucc' { PT _ (TS _ 17) }
+  'isZero' { PT _ (TS _ 18) }
+  'lam'    { PT _ (TS _ 19) }
+  'let'    { PT _ (TS _ 20) }
+  'pred'   { PT _ (TS _ 21) }
+  'second' { PT _ (TS _ 22) }
+  'succ'   { PT _ (TS _ 23) }
+  'then'   { PT _ (TS _ 24) }
+  'true'   { PT _ (TS _ 25) }
+  'zero'   { PT _ (TS _ 26) }
+  '{'      { PT _ (TS _ 27) }
+  '}'      { PT _ (TS _ 28) }
   L_Ident  { PT _ (TV _)    }
 
 %%
@@ -79,23 +83,32 @@ Term
   | 'succ' Term { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.SuccTerm (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1)) (snd $2)) }
   | 'zero' { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.ZeroTerm (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1))) }
   | 'pred' Term { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.PredTerm (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1)) (snd $2)) }
+  | 'isZero' Term { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.IsZeroTerm (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1)) (snd $2)) }
   | '{' Term ',' Term '}' { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.PairTerm (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1)) (snd $2) (snd $4)) }
   | 'first' Term { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.FstTerm (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1)) (snd $2)) }
   | 'second' Term { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.SndTerm (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1)) (snd $2)) }
+  | 'fix' Term { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.FixTerm (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1)) (snd $2)) }
+  | 'isSucc' Term { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.IsSuccTerm (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1)) (snd $2)) }
+  | 'isPred' Term { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.IsPredTerm (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1)) (snd $2)) }
+
+Type :: { (Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position, Language.STLC.Syntax.Generated.AbsSTLC.Type) }
+Type
+  : BaseType '->' Type { (fst $1, Language.STLC.Syntax.Generated.AbsSTLC.Arrow (fst $1) (snd $1) (snd $3)) }
+  | BaseType { (fst $1, Language.STLC.Syntax.Generated.AbsSTLC.Base (fst $1) (snd $1)) }
+  | Type1 { (fst $1, (snd $1)) }
+
+BaseType :: { (Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position, Language.STLC.Syntax.Generated.AbsSTLC.BaseType) }
+BaseType
+  : '{' Type ',' Type '}' { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.Pair (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1)) (snd $2) (snd $4)) }
+  | 'Nat' { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.Nat (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1))) }
+  | 'Bool' { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.Bool (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1))) }
 
 Type1 :: { (Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position, Language.STLC.Syntax.Generated.AbsSTLC.Type) }
-Type1
-  : Type1 '->' Type2 { (fst $1, Language.STLC.Syntax.Generated.AbsSTLC.Arrow (fst $1) (snd $1) (snd $3)) }
-  | Type2 { (fst $1, (snd $1)) }
+Type1 : Type2 { (fst $1, (snd $1)) }
 
 Type2 :: { (Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position, Language.STLC.Syntax.Generated.AbsSTLC.Type) }
 Type2
-  : 'Nat' { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.Nat (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1))) }
-  | 'Bool' { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), Language.STLC.Syntax.Generated.AbsSTLC.Bool (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1))) }
-  | '(' Type ')' { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), (snd $2)) }
-
-Type :: { (Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position, Language.STLC.Syntax.Generated.AbsSTLC.Type) }
-Type : Type1 { (fst $1, (snd $1)) }
+  : '(' Type ')' { (uncurry Language.STLC.Syntax.Generated.AbsSTLC.BNFC'Position (tokenLineCol $1), (snd $2)) }
 
 {
 

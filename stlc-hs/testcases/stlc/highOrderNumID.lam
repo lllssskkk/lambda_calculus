@@ -1,0 +1,3 @@
+let f = (lam idNum : Nat -> Nat. lam n : Nat . idNum n)(lam x : Nat . x) in 
+let result = f (succ (zero)) in 
+result

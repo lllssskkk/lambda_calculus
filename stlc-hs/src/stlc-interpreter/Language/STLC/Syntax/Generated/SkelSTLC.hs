@@ -44,12 +44,21 @@ transTerm x = case x of
   Language.STLC.Syntax.Generated.AbsSTLC.SuccTerm _ term -> failure x
   Language.STLC.Syntax.Generated.AbsSTLC.ZeroTerm _ -> failure x
   Language.STLC.Syntax.Generated.AbsSTLC.PredTerm _ term -> failure x
+  Language.STLC.Syntax.Generated.AbsSTLC.IsZeroTerm _ term -> failure x
   Language.STLC.Syntax.Generated.AbsSTLC.PairTerm _ term1 term2 -> failure x
   Language.STLC.Syntax.Generated.AbsSTLC.FstTerm _ term -> failure x
   Language.STLC.Syntax.Generated.AbsSTLC.SndTerm _ term -> failure x
+  Language.STLC.Syntax.Generated.AbsSTLC.FixTerm _ term -> failure x
+  Language.STLC.Syntax.Generated.AbsSTLC.IsSuccTerm _ term -> failure x
+  Language.STLC.Syntax.Generated.AbsSTLC.IsPredTerm _ term -> failure x
 
 transType :: Show a => Language.STLC.Syntax.Generated.AbsSTLC.Type' a -> Result
 transType x = case x of
-  Language.STLC.Syntax.Generated.AbsSTLC.Arrow _ type_1 type_2 -> failure x
+  Language.STLC.Syntax.Generated.AbsSTLC.Arrow _ basetype type_ -> failure x
+  Language.STLC.Syntax.Generated.AbsSTLC.Base _ basetype -> failure x
+
+transBaseType :: Show a => Language.STLC.Syntax.Generated.AbsSTLC.BaseType' a -> Result
+transBaseType x = case x of
+  Language.STLC.Syntax.Generated.AbsSTLC.Pair _ type_1 type_2 -> failure x
   Language.STLC.Syntax.Generated.AbsSTLC.Nat _ -> failure x
   Language.STLC.Syntax.Generated.AbsSTLC.Bool _ -> failure x
