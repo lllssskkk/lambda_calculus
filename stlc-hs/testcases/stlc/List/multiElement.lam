@@ -1,0 +1,1 @@
+cons [Nat] (succ (succ zero)) (cons [Nat] (succ (succ zero)) (cons [Nat] (succ (succ zero)) (cons [Nat] (zero) (nil [Nat]))))

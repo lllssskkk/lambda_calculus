@@ -58,12 +58,13 @@ data Term' a
 
 type Type = Type' BNFC'Position
 data Type' a
-    = Arrow a (BaseType' a) (Type' a) | Base a (BaseType' a)
+    = Arrow a (BaseType' a) (Type' a)
+    | Base a (BaseType' a)
+    | ListT a (Type' a)
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
 type BaseType = BaseType' BNFC'Position
-data BaseType' a
-    = Pair a (Type' a) (Type' a) | Nat a | Bool a | ListT a (Type' a)
+data BaseType' a = Pair a (Type' a) (Type' a) | Nat a | Bool a
   deriving (C.Eq, C.Ord, C.Show, C.Read, C.Functor, C.Foldable, C.Traversable)
 
 newtype Ident = Ident String
@@ -126,11 +127,11 @@ instance HasPosition Type where
   hasPosition = \case
     Arrow p _ _ -> p
     Base p _ -> p
+    ListT p _ -> p
 
 instance HasPosition BaseType where
   hasPosition = \case
     Pair p _ _ -> p
     Nat p -> p
     Bool p -> p
-    ListT p _ -> p
 

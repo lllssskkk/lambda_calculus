@@ -1,0 +1,3 @@
+let x = cons [ Nat ] (zero) (nil [ Nat ]) in
+let y = cons [ Nat ] (succ (zero)) x in 
+y 

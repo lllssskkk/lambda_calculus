@@ -1,0 +1,1 @@
+if isnil [Nat] (nil [Nat]) then (zero) else head [Nat] (cons [Nat] (zero) (nil [Nat]))

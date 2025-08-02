@@ -1,0 +1,1 @@
+cons [Nat] (zero) (nil [Nat])

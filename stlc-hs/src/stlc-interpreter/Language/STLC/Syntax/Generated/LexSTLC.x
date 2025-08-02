@@ -28,7 +28,7 @@ $u = [. \n]          -- universal: any character
 
 -- Symbols and non-identifier-like reserved words
 
-@rsyms = \( | \) | \= | \: | \. | \{ | \, | \} | \- \>
+@rsyms = \( | \) | \= | \: | \. | \{ | \, | \} | \- \> | \[ | \]
 
 :-
 
@@ -153,21 +153,22 @@ eitherResIdent tv s = treeFind resWords
 -- | The keywords and symbols of the language organized as binary search tree.
 resWords :: BTree
 resWords =
-  b "in" 15
-    (b "Bool" 8
-       (b "->" 4
-          (b ")" 2 (b "(" 1 N N) (b "," 3 N N))
-          (b ":" 6 (b "." 5 N N) (b "=" 7 N N)))
-       (b "first" 12
-          (b "else" 10 (b "Nat" 9 N N) (b "false" 11 N N))
-          (b "if" 14 (b "fix" 13 N N) N)))
-    (b "second" 22
-       (b "lam" 19
-          (b "isSucc" 17 (b "isPred" 16 N N) (b "isZero" 18 N N))
-          (b "pred" 21 (b "let" 20 N N) N))
-       (b "zero" 26
-          (b "then" 24 (b "succ" 23 N N) (b "true" 25 N N))
-          (b "}" 28 (b "{" 27 N N) N)))
+  b "if" 18
+    (b "Nat" 9
+       (b "." 5
+          (b "," 3 (b ")" 2 (b "(" 1 N N) N) (b "->" 4 N N))
+          (b "=" 7 (b ":" 6 N N) (b "Bool" 8 N N)))
+       (b "false" 14
+          (b "cons" 12 (b "]" 11 (b "[" 10 N N) N) (b "else" 13 N N))
+          (b "fix" 16 (b "first" 15 N N) (b "head" 17 N N))))
+    (b "pred" 27
+       (b "isnil" 23
+          (b "isSucc" 21
+             (b "isPred" 20 (b "in" 19 N N) N) (b "isZero" 22 N N))
+          (b "let" 25 (b "lam" 24 N N) (b "nil" 26 N N)))
+       (b "true" 32
+          (b "tail" 30 (b "succ" 29 (b "second" 28 N N) N) (b "then" 31 N N))
+          (b "{" 34 (b "zero" 33 N N) (b "}" 35 N N))))
   where
   b s n = B bs (TS bs n)
     where

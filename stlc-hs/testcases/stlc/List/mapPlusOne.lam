@@ -1,0 +1,8 @@
+let forallPlusOneGenerator = lam f : [Nat] -> [Nat] . lam xs : [Nat] . 
+      if (isnil [Nat] xs) 
+        then nil [Nat] 
+        else (cons [Nat] (succ (head [Nat] xs)) (f (tail [Nat] xs))) in 
+let mapPlusOne = fix forallPlusOneGenerator in
+let testList = cons [Nat] (succ (succ zero)) (cons [Nat] (succ (succ zero))) (cons [Nat] (zero) (nil [Nat])) in  
+mapPlusOne testList
+

@@ -1,0 +1,1 @@
+cons [{Nat, Bool}] ({zero, true}) (nil [{Nat, Bool}])

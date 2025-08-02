@@ -1,0 +1,4 @@
+let twoDNil =  nil [[Nat]] in
+let oneElem = cons [Nat] (zero) (nil [Nat]) in 
+let xs = cons [Nat] (succ (succ zero)) (cons [Nat] (succ (succ zero)) (cons [Nat] (succ (succ zero)) (cons [Nat] (zero) (nil [Nat])))) in 
+cons [[Nat]] (xs) (cons [[Nat]] (oneElem) (twoDNil))

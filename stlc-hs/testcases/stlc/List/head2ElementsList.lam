@@ -1,0 +1,1 @@
+head [Nat] (cons [Nat] (succ zero) (cons [Nat] (zero) (nil [Nat])))

@@ -1,0 +1,3 @@
+let tailList = tail [Nat] (tail [Nat] (cons [Nat] (zero) (cons [Nat] (succ zero) (nil [Nat]))))
+in head[Nat] (tailList)
+

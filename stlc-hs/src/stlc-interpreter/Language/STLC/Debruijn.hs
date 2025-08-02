@@ -17,6 +17,7 @@ data Typ where
   TBool :: Typ
   TArrow :: Typ -> Typ -> Typ
   TPair :: Typ -> Typ -> Typ
+  TList :: Typ -> Typ
 
 deriving stock instance Show Typ
 
@@ -53,6 +54,12 @@ data DebruijnExpr where
   DeBruijnIsZero :: Syn.BNFC'Position -> DebruijnExpr -> DebruijnExpr
   DeBruijnIsSucc :: Syn.BNFC'Position -> DebruijnExpr -> DebruijnExpr
   DeBruijnIsPred :: Syn.BNFC'Position -> DebruijnExpr -> DebruijnExpr
+  -- List
+  DeBruijnCons :: Syn.BNFC'Position -> Typ -> DebruijnExpr -> DebruijnExpr -> DebruijnExpr
+  DeBruijnNil :: Syn.BNFC'Position -> Typ -> DebruijnExpr
+  DeBruijnIsNil :: Syn.BNFC'Position -> Typ -> DebruijnExpr -> DebruijnExpr
+  DeBruijnHead :: Syn.BNFC'Position -> Typ -> DebruijnExpr -> DebruijnExpr
+  DeBruijnTail :: Syn.BNFC'Position -> Typ -> DebruijnExpr -> DebruijnExpr
 
 instance Eq DebruijnExpr where
   (==) :: DebruijnExpr -> DebruijnExpr -> Bool
@@ -86,6 +93,12 @@ instance Show DebruijnExpr where
   show (DeBruijnIsZero _pos num) = "isZero(" ++ show num ++ ")"
   show (DeBruijnIsSucc _pos num) = "isSucc(" ++ show num ++ ")"
   show (DeBruijnIsPred _pos num) = "isPred(" ++ show num ++ ")"
+  -- List
+  show (DeBruijnCons _pos typ headElem tailElem) = "cons[" ++ show typ ++ "] " ++ (show headElem) ++ " " ++ show tailElem
+  show (DeBruijnNil _pos typ) = "nil[" ++ show typ ++ "]"
+  show (DeBruijnIsNil _pos typ expr) = "isNil[" ++ show typ ++ "]" ++ show expr
+  show (DeBruijnHead _pos typ expr) = "head[" ++ show typ ++ "]" ++ show expr
+  show (DeBruijnTail _pos typ expr) = "tail[" ++ show typ ++ "]" ++ show expr
 
 type NamingContext = [Syn.Ident]
 
@@ -103,8 +116,7 @@ convertBaseTyp :: Syn.BaseType -> Typ
 convertBaseTyp (Syn.Nat _pos) = TNat
 convertBaseTyp (Syn.Bool _pos) = TBool
 convertBaseTyp (Syn.Pair _pos firstTyp secondTyp) = TPair (convertTyp firstTyp) (convertTyp secondTyp)
-
--- convertTyp (Syn.Pair _pos firstTyp secondTyp) = TPair (convertTyp firstTyp) (convertTyp secondTyp)
+convertBaseTyp (Syn.ListT _pos base) = TList $ convertTyp base
 
 debruijnization :: Syn.Prog -> Either DebruijnError DebruijnExpr
 debruijnization (Syn.Program _pos term) = do
@@ -138,6 +150,7 @@ debruijnizeTerm (Syn.FixTerm pos f) = do
   pure $ DeBruijnFix pos f'
 debruijnizeTerm (Syn.TrueTerm pos) = pure $ DeBruijnTrue pos
 debruijnizeTerm (Syn.FalseTerm pos) = pure $ DeBruijnFalse pos
+-- Num
 debruijnizeTerm (Syn.SuccTerm pos num) = do
   num' <- debruijnizeTerm num
   pure . DeBruijnNum $ DeBruijnSucc pos num'
@@ -146,10 +159,6 @@ debruijnizeTerm (Syn.PredTerm pos num) = do
   pure . DeBruijnNum $ DeBruijnPred pos num'
 debruijnizeTerm (Syn.ZeroTerm pos) = do
   pure . DeBruijnNum $ DeBruijnZero pos
-debruijnizeTerm (Syn.PairTerm pos first second) = do
-  first' <- debruijnizeTerm first
-  second' <- debruijnizeTerm second
-  pure $ DeBruijnPair pos first' second'
 debruijnizeTerm (Syn.IsZeroTerm pos term) = do
   term' <- debruijnizeTerm term
   pure $ DeBruijnIsZero pos term'
@@ -159,15 +168,40 @@ debruijnizeTerm (Syn.IsSuccTerm pos term) = do
 debruijnizeTerm (Syn.IsPredTerm pos term) = do
   term' <- debruijnizeTerm term
   pure $ DeBruijnIsPred pos term'
+-- Pair
+debruijnizeTerm (Syn.PairTerm pos first second) = do
+  first' <- debruijnizeTerm first
+  second' <- debruijnizeTerm second
+  pure $ DeBruijnPair pos first' second'
 debruijnizeTerm (Syn.FstTerm pos element) = do
   element' <- debruijnizeTerm element
   pure $ DeBruijnFirst pos element'
 debruijnizeTerm (Syn.SndTerm pos element) = do
   element' <- debruijnizeTerm element
   pure $ DeBruijnSecond pos element'
+-- List
+debruijnizeTerm (Syn.NilTerm pos typ) = pure $ DeBruijnNil pos (convertTyp typ)
+debruijnizeTerm (Syn.IsNilTerm pos typ xs) = do
+  xs' <- debruijnizeTerm xs
+  pure $ DeBruijnIsNil pos (convertTyp typ) xs'
+debruijnizeTerm (Syn.HeadTerm pos typ xs) = do
+  xs' <- debruijnizeTerm xs
+  pure $ DeBruijnHead pos (convertTyp typ) xs'
+debruijnizeTerm (Syn.TailTerm pos typ xs) = do
+  xs' <- debruijnizeTerm xs
+  pure $ DeBruijnTail pos (convertTyp typ) xs'
 
 debruijnApplication :: Syn.Application -> App DebruijnExpr
 debruijnApplication (Syn.ApplicationAtom _pos atom) = debruijnAtom atom
+debruijnApplication (Syn.AApplication pos (Syn.AApplication _pos' (Syn.ApplicationAtom _pos (Syn.ACons _pos'' typ)) headElem) tailElem) = do
+  gamma <- get
+  let (eitherHead, _HeadGamma) = runState (runExceptT (debruijnAtom headElem)) gamma
+  guardM (isRight eitherHead) $ fromLeft undefined eitherHead
+  let (eitherTail, _argGamma) = runState (runExceptT (debruijnAtom tailElem)) gamma
+  guardM (isRight eitherTail) $ fromLeft undefined eitherTail
+  let headElem' = fromRight undefined eitherHead
+      tailElem' = fromRight undefined eitherTail
+  pure $ DeBruijnCons pos (convertTyp typ) headElem' tailElem'
 debruijnApplication (Syn.AApplication pos f arg) = do
   gamma <- get
   let (eitherF, _fGamma) = runState (runExceptT (debruijnApplication f)) gamma
@@ -194,3 +228,4 @@ debruijnAtom (Syn.AVar pos ident) = do
             ]
     else pure $ DeBruijnIndex pos $ fromJust index
 debruijnAtom (Syn.ATerm _pos term) = debruijnizeTerm term
+debruijnAtom (Syn.ACons _pos _typ) = error "We shouldn't enter this branch, it is probably the case that your list definition is incorrect."

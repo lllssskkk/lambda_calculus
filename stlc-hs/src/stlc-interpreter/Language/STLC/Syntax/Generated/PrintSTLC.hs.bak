@@ -181,10 +181,10 @@ instance Print (Language.STLC.Syntax.Generated.AbsSTLC.Type' a) where
   prt i = \case
     Language.STLC.Syntax.Generated.AbsSTLC.Arrow _ basetype type_ -> prPrec i 0 (concatD [prt 0 basetype, doc (showString "->"), prt 0 type_])
     Language.STLC.Syntax.Generated.AbsSTLC.Base _ basetype -> prPrec i 0 (concatD [prt 0 basetype])
+    Language.STLC.Syntax.Generated.AbsSTLC.ListT _ type_ -> prPrec i 0 (concatD [doc (showString "["), prt 0 type_, doc (showString "]")])
 
 instance Print (Language.STLC.Syntax.Generated.AbsSTLC.BaseType' a) where
   prt i = \case
     Language.STLC.Syntax.Generated.AbsSTLC.Pair _ type_1 type_2 -> prPrec i 0 (concatD [doc (showString "{"), prt 0 type_1, doc (showString ","), prt 0 type_2, doc (showString "}")])
     Language.STLC.Syntax.Generated.AbsSTLC.Nat _ -> prPrec i 0 (concatD [doc (showString "Nat")])
     Language.STLC.Syntax.Generated.AbsSTLC.Bool _ -> prPrec i 0 (concatD [doc (showString "Bool")])
-    Language.STLC.Syntax.Generated.AbsSTLC.ListT _ type_ -> prPrec i 0 (concatD [doc (showString "["), prt 0 type_, doc (showString "]")])

@@ -71,11 +71,11 @@ All other symbols are terminals.
   |  |  **|**  | ``isPred`` //Term//
   | //Type// | -> | //BaseType// ``->`` //Type//
   |  |  **|**  | //BaseType//
+  |  |  **|**  | ``[`` //Type// ``]``
   |  |  **|**  | //Type1//
   | //BaseType// | -> | ``{`` //Type// ``,`` //Type// ``}``
   |  |  **|**  | ``Nat``
   |  |  **|**  | ``Bool``
-  |  |  **|**  | ``[`` //Type// ``]``
   | //Type1// | -> | //Type2//
   | //Type2// | -> | ``(`` //Type// ``)``
 

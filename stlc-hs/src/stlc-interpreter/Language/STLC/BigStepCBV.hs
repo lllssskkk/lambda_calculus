@@ -12,6 +12,29 @@ import Language.STLC.Syntax.Generated.AbsSTLC qualified as Syn
 
 type Env = [Value]
 
+data ListValue where
+  VNil :: ListValue
+  VCons :: Value -> Value -> ListValue
+
+instance Show ListValue where
+  show = go
+    where
+      -- Collect the textual form of each element, then join with “, ”
+      go :: ListValue -> String
+      go VNil = "[]"
+      go xs = "[" ++ intercalate ", " (elems xs) ++ "]"
+
+      -- Walk down the list, making sure we stop when the tail is
+      -- anything other than another list (so we do not crash on
+      -- ill-formed values).
+      elems :: ListValue -> [String]
+      elems VNil = []
+      elems (VCons hd tl) =
+        show hd
+          : case tl of
+            VList rest -> elems rest -- proper list tail
+            _ -> error "Impossible : Beacuase of the strong normalization property of STLC, no other value could be supplied to VCons"
+
 data NumValue where
   VSucc :: Value -> NumValue
   VZero :: NumValue
@@ -32,6 +55,7 @@ data Value where
   VClosure :: Syn.Ident -> Typ -> DebruijnExpr -> Env -> Value
   VTrue :: Value
   VFalse :: Value
+  VList :: ListValue -> Value
   VNum :: NumValue -> Value
   VPair :: Value -> Value -> Value
 
@@ -58,6 +82,7 @@ debugShowValue (VTrue) = "True"
 debugShowValue (VFalse) = "False"
 debugShowValue (VNum num) = show num
 debugShowValue (VPair first second) = "Pair(" ++ show first ++ "," ++ show second ++ ")"
+debugShowValue (VList xs) = show xs
 
 type CallByValueBigStep = State Env
 
@@ -282,6 +307,115 @@ getType expr = do
                 " Pair expression expects an argument of type Pair, but receives a value of type ",
                 show pairTyp
               ]
+    go (DeBruijnCons pos typ x xs) = do
+      guardM (isListTyp typ) $
+        TypeCheckingError $
+          mconcat
+            [ "At Position ",
+              show pos,
+              " Cons expression expects a list type annotation, but receives a type ",
+              show typ
+            ]
+      context <- get
+      xTyp <- go x
+      guardM (typ == TList xTyp) $
+        TypeCheckingError $
+          mconcat
+            [ "At Position ",
+              show pos,
+              " Cons expression expects a head of type ",
+              show typ,
+              " but receives a value of type ",
+              show xTyp
+            ]
+      put context
+      xsTyp <- go xs
+      guardM (typ == xsTyp) $
+        TypeCheckingError $
+          mconcat
+            [ "At Position ",
+              show pos,
+              " Cons expression expects a tail of type ",
+              show typ,
+              " but receives a tail of type ",
+              show xsTyp
+            ]
+      pure typ
+    go (DeBruijnNil pos typ) = do
+      guardM (isListTyp typ) $
+        TypeCheckingError $
+          mconcat
+            [ "At Position ",
+              show pos,
+              " isNil expression expects a list type annotation, but receives a type ",
+              show typ
+            ]
+      pure typ
+    go (DeBruijnIsNil pos typ xs) = do
+      guardM (isListTyp typ) $
+        TypeCheckingError $
+          mconcat
+            [ "At Position ",
+              show pos,
+              " isNil expression expects a list type annotation, but receives a type ",
+              show typ
+            ]
+      xsTyp <- go xs
+      guardM (typ == xsTyp) $
+        TypeCheckingError $
+          mconcat
+            [ "At Position ",
+              show pos,
+              " IsNil expression expects an argument of a list of type , ",
+              show typ,
+              "but receives a list of type ",
+              show xsTyp
+            ]
+      pure TBool
+    go (DeBruijnHead pos typ xs) = do
+      guardM (isListTyp typ) $
+        TypeCheckingError $
+          mconcat
+            [ "At Position ",
+              show pos,
+              " Head expression expects a list type annotation, but receives a type ",
+              show typ
+            ]
+      xsTyp <- go xs
+      guardM (typ == xsTyp) $
+        TypeCheckingError $
+          mconcat
+            [ "At Position ",
+              show pos,
+              " Head expression expects an argument of a list of type, ",
+              show typ,
+              "but receives a list of type ",
+              show xsTyp
+            ]
+      case xsTyp of
+        (TList elemTyp) -> pure elemTyp
+        _ -> error "Impossible Eleven : Beacuase of the strong normalization property of STLC, only Function value could be supplied to DeBruijnApp"
+    go (DeBruijnTail pos typ xs) = do
+      guardM (isListTyp typ) $
+        TypeCheckingError $
+          mconcat
+            [ "At Position ",
+              show pos,
+              " Tail expression expects a list type annotation, but receives a type ",
+              show typ
+            ]
+      xsTyp <- go xs
+      guardM (typ == xsTyp) $
+        TypeCheckingError $
+          mconcat
+            [ "At Position ",
+              show pos,
+              " tail expression expects an argument of a list of type , ",
+              show typ,
+              "but receives a list of type ",
+              show xsTyp
+            ]
+      pure typ
 
 isFunctionTyp :: Typ -> Bool
 isFunctionTyp (TArrow _ _) = True
@@ -290,6 +424,10 @@ isFunctionTyp _ = False
 isPairTyp :: Typ -> Bool
 isPairTyp (TPair _ _) = True
 isPairTyp _ = False
+
+isListTyp :: Typ -> Bool
+isListTyp (TList _) = True
+isListTyp _ = False
 
 callByValueBigStep :: DebruijnExpr -> Value
 callByValueBigStep expr = evalState (go expr) []
@@ -380,6 +518,31 @@ callByValueBigStep expr = evalState (go expr) []
         VTrue -> go thenBranch
         VFalse -> go elseBranch
         _ -> error "Impossible Six: Beacuase of the strong normalization property of STLC, only Bool value could be supplied to DeBruijnIfThenElse as condition"
+    go (DeBruijnCons _pos _typ x xs) = do
+      context <- get
+      x' <- go x
+      put context
+      xs' <- go xs
+      pure $ VList $ VCons x' xs'
+    go (DeBruijnNil _pos _typ) = pure $ VList VNil
+    go (DeBruijnIsNil _pos _typ xs) = do
+      xs' <- go xs
+      case xs' of
+        (VList VNil) -> pure VTrue
+        (VList _) -> pure VFalse
+        _ -> error "Impossible Seven: Beacuase of the strong normalization property of STLC, only VList value could be supplied to DeBruijnIsNil"
+    go (DeBruijnHead _pos _typ xs) = do
+      xs' <- go xs
+      case xs' of
+        (VList VNil) -> error "Runtime Error : A Head operation is applied to an empty list"
+        (VList (VCons headElem _tailElem)) -> pure headElem
+        _ -> error "Impossible Eight: Beacuase of the strong normalization property of STLC, only VList value could be supplied to DeBruijnHead"
+    go (DeBruijnTail _pos _typ xs) = do
+      xs' <- go xs
+      case xs' of
+        (VList VNil) -> pure (VList VNil)
+        (VList (VCons _headElem tailElem)) -> pure tailElem
+        _ -> error "Impossible Nine: Beacuase of the strong normalization property of STLC, only VList value could be supplied to DeBruijnHead"
 
 normalizeNumValue :: NumValue -> NumValue
 normalizeNumValue numV =
@@ -390,7 +553,7 @@ normalizeNumValue numV =
     go VZero countSucc countPred = (countSucc, countPred)
     go (VSucc (VNum v)) countSucc countPred = go v (countSucc + 1) countPred
     go (VPred (VNum v)) countSucc countPred = go v countSucc (countPred + 1)
-    go _ _ _ = error "Impossible Seven: Beacuase of the strong normalization property of STLC, no other value could be supplied to NumValue"
+    go _ _ _ = error "Impossible Ten: Beacuase of the strong normalization property of STLC, no other value could be supplied to NumValue"
     buildNum :: Int -> NumValue
     buildNum n
       | n < 0 = VPred . VNum . buildNum $ (n + 1)
