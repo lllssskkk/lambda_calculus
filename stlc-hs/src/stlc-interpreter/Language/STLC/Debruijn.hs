@@ -5,11 +5,9 @@ import Control.Monad.Except
     MonadError (throwError),
     runExceptT,
   )
-import Control.Monad.State (MonadState (get), State, runState)
-import Data.Either (fromLeft, fromRight, isRight)
+import Control.Monad.Reader (MonadReader (ask, local), Reader, runReader)
 import Data.List (elemIndex)
 import Data.Maybe (fromJust, isNothing)
-import Language.STLC.Common (guardM)
 import Language.STLC.Syntax qualified as Syn
 
 data Typ where
@@ -104,7 +102,7 @@ type NamingContext = [Syn.Ident]
 
 data DebruijnError = NegativeNaturalNumber String | UnboundedVariable String deriving stock (Show)
 
-type App a = ExceptT DebruijnError (State NamingContext) a
+type App a = ExceptT DebruijnError (Reader NamingContext) a
 
 convertTyp :: Syn.Type -> Typ
 -- convertTyp (Syn.Nat _pos) = TNat
@@ -120,25 +118,17 @@ convertBaseTyp (Syn.ListT _pos base) = TList $ convertTyp base
 
 debruijnization :: Syn.Prog -> Either DebruijnError DebruijnExpr
 debruijnization (Syn.Program _pos term) = do
-  fst $ runState (runExceptT (debruijnizeTerm term)) []
+  runReader (runExceptT (debruijnizeTerm term)) []
 
 debruijnizeTerm :: Syn.Term -> App DebruijnExpr
 debruijnizeTerm (Syn.ApplicationTerm _pos s) = debruijnApplication s
 debruijnizeTerm (Syn.LetInTerm pos binder expr body) = do
-  gamma <- get
-  let (eitherExpr, _exprGamma) = runState (runExceptT (debruijnizeTerm expr)) gamma
-  guardM (isRight eitherExpr) $ fromLeft undefined eitherExpr
-  let (eitherBody, _bodyGamma) = runState (runExceptT (debruijnizeTerm body)) $ binder : gamma
-  guardM (isRight eitherBody) $ fromLeft undefined eitherBody
-  let expr' = fromRight undefined eitherExpr
-      body' = fromRight undefined eitherBody
+  expr' <- debruijnizeTerm expr
+  body' <- local (binder :) (debruijnizeTerm body)
   pure $ DeBruijnLet pos (binder, expr') body'
 debruijnizeTerm (Syn.LambdaAbsTerm pos binder typ body) = do
-  gamma <- get
   let typ' = convertTyp typ
-  let (eitherBody, _bodyGamma) = runState (runExceptT (debruijnizeTerm body)) $ binder : gamma
-  guardM (isRight eitherBody) $ fromLeft undefined eitherBody
-  let body' = fromRight undefined eitherBody
+  body' <- local (binder :) (debruijnizeTerm body)
   pure $ DeBruijnAbs pos binder typ' body'
 debruijnizeTerm (Syn.IfTerm pos condition thenBranch elseBranch) = do
   condition' <- debruijnizeTerm condition
@@ -194,34 +184,25 @@ debruijnizeTerm (Syn.TailTerm pos typ xs) = do
 debruijnApplication :: Syn.Application -> App DebruijnExpr
 debruijnApplication (Syn.ApplicationAtom _pos atom) = debruijnAtom atom
 debruijnApplication (Syn.AApplication pos (Syn.AApplication _pos' (Syn.ApplicationAtom _pos (Syn.ACons _pos'' typ)) headElem) tailElem) = do
-  gamma <- get
-  let (eitherHead, _HeadGamma) = runState (runExceptT (debruijnAtom headElem)) gamma
-  guardM (isRight eitherHead) $ fromLeft undefined eitherHead
-  let (eitherTail, _argGamma) = runState (runExceptT (debruijnAtom tailElem)) gamma
-  guardM (isRight eitherTail) $ fromLeft undefined eitherTail
-  let headElem' = fromRight undefined eitherHead
-      tailElem' = fromRight undefined eitherTail
+  headElem' <- debruijnAtom headElem
+  tailElem' <- debruijnAtom tailElem
   pure $ DeBruijnCons pos (convertTyp typ) headElem' tailElem'
 debruijnApplication (Syn.AApplication pos f arg) = do
-  gamma <- get
-  let (eitherF, _fGamma) = runState (runExceptT (debruijnApplication f)) gamma
-  guardM (isRight eitherF) $ fromLeft undefined eitherF
-  let (eitherArg, _argGamma) = runState (runExceptT (debruijnAtom arg)) gamma
-  guardM (isRight eitherArg) $ fromLeft undefined eitherArg
-  let f' = fromRight undefined eitherF
-      arg' = fromRight undefined eitherArg
+  f' <- debruijnApplication f
+  arg' <- debruijnAtom arg
   pure $ DeBruijnApp pos f' arg'
 
 debruijnAtom :: Syn.Atom -> App DebruijnExpr
 debruijnAtom (Syn.AVar pos ident) = do
-  gamma <- get
+  gamma <- ask
   let index = elemIndex ident gamma
   if isNothing index
     then
       throwError $
         UnboundedVariable $
           mconcat
-            [ "At position ",
+            [ "In debruijnization Phase, ",
+              "at position ",
               show pos,
               ", Unbounded Variable : ",
               show ident

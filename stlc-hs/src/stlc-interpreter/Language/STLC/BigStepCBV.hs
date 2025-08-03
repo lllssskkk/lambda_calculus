@@ -4,7 +4,7 @@ module Language.STLC.BigStepCBV (Value, callByValueBigStep, debugShowValue, getT
 
 import Control.Monad.Except (ExceptT, MonadError (throwError), runExceptT)
 import Control.Monad.Fix (mfix)
-import Control.Monad.State (MonadState (get, put), State, evalState, modify, runState, withState)
+import Control.Monad.Reader (MonadReader (ask), Reader, local, runReader)
 import Data.List (intercalate, (!?))
 import Language.STLC.Common
 import Language.STLC.Debruijn (DeBruijnNum (..), DebruijnExpr (..), Typ (..))
@@ -84,21 +84,21 @@ debugShowValue (VNum num) = show num
 debugShowValue (VPair first second) = "Pair(" ++ show first ++ "," ++ show second ++ ")"
 debugShowValue (VList xs) = show xs
 
-type CallByValueBigStep = State Env
+type CallByValueBigStep = Reader Env
 
 type TypingCtx = [Typ]
 
 data TypeCheckingError = TypeCheckingError String deriving stock (Show)
 
-type TypeChecking a = ExceptT TypeCheckingError (State TypingCtx) a
+type TypeChecking a = ExceptT TypeCheckingError (Reader TypingCtx) a
 
 getType :: DebruijnExpr -> Either TypeCheckingError Typ
 getType expr = do
-  fst $ runState (runExceptT (go expr)) []
+  runReader (runExceptT (go expr)) []
   where
     go :: DebruijnExpr -> TypeChecking Typ
     go (DeBruijnIndex pos i) = do
-      typCtx <- get
+      typCtx <- ask
       guardM (i <= length typCtx) $
         TypeCheckingError $
           mconcat
@@ -112,8 +112,7 @@ getType expr = do
             ]
       pure $ typCtx !! i
     go (DeBruijnAbs _ _var typ body) = do
-      modify $ (typ :)
-      bodyTyp <- go body
+      bodyTyp <- local (typ :) (go body)
       pure $ TArrow typ bodyTyp
     go app@(DeBruijnApp pos f arg) = do
       fTyp <- go f
@@ -148,8 +147,7 @@ getType expr = do
         _ -> error "Impossible "
     go (DeBruijnLet _ (_binder, binding) body) = do
       bindingTyp <- go binding
-      modify (bindingTyp :)
-      go body
+      local (bindingTyp :) (go body)
     go (DeBruijnTrue _pos) = pure TBool
     go (DeBruijnFalse _pos) = pure TBool
     go ifExpr@(DeBruijnIfThenElse pos condition thenBranch elseBranch) = do
@@ -262,9 +260,7 @@ getType expr = do
             ]
       pure TBool
     go (DeBruijnPair _pos first second) = do
-      context <- get
       firstTyp <- go first
-      put context
       secondTyp <- go second
       pure $ TPair firstTyp secondTyp
     go (DeBruijnFirst pos pair) = do
@@ -316,7 +312,6 @@ getType expr = do
               " Cons expression expects a list type annotation, but receives a type ",
               show typ
             ]
-      context <- get
       xTyp <- go x
       guardM (typ == TList xTyp) $
         TypeCheckingError $
@@ -328,7 +323,6 @@ getType expr = do
               " but receives a value of type ",
               show xTyp
             ]
-      put context
       xsTyp <- go xs
       guardM (typ == xsTyp) $
         TypeCheckingError $
@@ -430,41 +424,37 @@ isListTyp (TList _) = True
 isListTyp _ = False
 
 callByValueBigStep :: DebruijnExpr -> Value
-callByValueBigStep expr = evalState (go expr) []
+callByValueBigStep expr = runReader (go expr) []
   where
     go :: DebruijnExpr -> CallByValueBigStep Value
     go (DeBruijnIndex _pos index) = do
-      gamma <- get
+      gamma <- ask
       let retrieved = gamma !? index
       case retrieved of
         Just x -> pure x
         Nothing -> error $ "The index is " ++ show index ++ " , The environment list is " ++ show gamma
     go (DeBruijnAbs _pos binder typ body) = do
-      gamma <- get
+      gamma <- ask
       pure $ VClosure binder typ body gamma
     go (DeBruijnApp _pos f arg) = do
       arg' <- go arg
-      context <- get
       f' <- go f
       case f' of
         (VClosure _binder _typ closureF closureEnv) -> do
-          put (arg' : closureEnv)
-          evalApp <- go closureF
-          put context
+          evalApp <- local (const (arg' : closureEnv)) (go closureF)
           pure evalApp
         _ -> error "Impossible One : Beacuase of the strong normalization property of STLC, only Function value could be supplied to DeBruijnApp"
     go (DeBruijnLet _pos (_binder, binding) body) = do
       binding' <- go binding
-      withState (\s -> binding' : s) $ go body
+      local (\s -> binding' : s) $ go body
     go (DeBruijnFix _pos f) = do
       f' <- go f
-      _context <- get
       case f' of
         (VClosure _binder _typ body bodyEnv) -> do
           -- ! Need more clearance on this
           -- mfix ties the knot:  v is the result of the *whole* fix,
           -- and we evaluate the body in an env where x ↦ v
-          mfix $ \v -> withState (const (v : bodyEnv)) (go body)
+          mfix $ \v -> local (const (v : bodyEnv)) (go body)
         _ -> error "Impossible Two : Beacuase of the strong normalization property of STLC, only Function value could be supplied to DeBruijnFix"
     go (DeBruijnTrue _pos) = pure VTrue
     go (DeBruijnFalse _pos) = pure VFalse
@@ -497,9 +487,7 @@ callByValueBigStep expr = evalState (go expr) []
         (VNum _) -> pure VFalse
         _ -> error "Impossible Three : Beacuase of the strong normalization property of STLC, only Num value could be supplied to DeBruijnIsSucc"
     go (DeBruijnPair _pos first second) = do
-      context <- get
       first' <- go first
-      put context
       second' <- go second
       pure $ VPair first' second'
     go (DeBruijnFirst _pos pair) = do
@@ -519,9 +507,7 @@ callByValueBigStep expr = evalState (go expr) []
         VFalse -> go elseBranch
         _ -> error "Impossible Six: Beacuase of the strong normalization property of STLC, only Bool value could be supplied to DeBruijnIfThenElse as condition"
     go (DeBruijnCons _pos _typ x xs) = do
-      context <- get
       x' <- go x
-      put context
       xs' <- go xs
       pure $ VList $ VCons x' xs'
     go (DeBruijnNil _pos _typ) = pure $ VList VNil
