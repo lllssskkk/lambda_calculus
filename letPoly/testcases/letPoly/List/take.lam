@@ -1,0 +1,20 @@
+let takeGenerator = lam f  . 
+                      lam count  .
+                      lam xs  .  
+                        if (isnil  xs)
+                          then (nil )
+                          else (
+                                if (isZero count) 
+                                then (nil )
+                                else (
+                                  cons  (head  xs) (f (pred count) (tail  xs) )
+                                )
+                              ) in 
+let take = fix takeGenerator in 
+let testList = cons  (succ (succ zero)) (cons  (succ (succ zero)) (cons  (succ (succ zero)) (cons  (zero) (nil )))) in 
+let forallPlusOneGenerator = lam f . lam xs  . 
+      if (isnil  xs) 
+        then nil  
+        else (cons  (succ (head  xs)) (f (tail  xs))) in 
+let mapPlusOne = fix forallPlusOneGenerator in
+mapPlusOne testList

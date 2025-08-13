@@ -1,0 +1,1 @@
+cons  (succ (succ zero)) (cons  (succ (succ zero)) (cons  (succ (succ zero)) (cons  (zero) (nil ))))

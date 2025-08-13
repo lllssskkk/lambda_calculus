@@ -1,0 +1,3 @@
+let tailList = tail  (tail  (cons  (zero) (cons  (succ zero) (nil ))))
+in head (tailList)
+

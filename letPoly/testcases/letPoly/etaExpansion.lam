@@ -1,0 +1,3 @@
+let mySucc = lam x . succ x  in 
+let myZero = zero in 
+mySucc myZero

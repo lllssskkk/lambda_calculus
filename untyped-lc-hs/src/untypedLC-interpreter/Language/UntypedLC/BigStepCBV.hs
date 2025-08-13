@@ -6,7 +6,6 @@ import Control.Monad.State (MonadState (get, put), State, evalState, runState, w
 import Data.List
 import Data.List (intercalate)
 import Data.Map qualified as Map
-import Debug.Trace
 import Language.UntypedLC.Debruijn (DebruijnExpr (..))
 import Language.UntypedLC.Syntax qualified as Syn
 

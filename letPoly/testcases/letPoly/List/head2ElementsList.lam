@@ -1,0 +1,1 @@
+head (cons (succ zero) (cons (zero) (nil)))

@@ -4,11 +4,15 @@ module Main (main) where
 
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
-import Language.UntypedLC.BigStepCBV (Value, callByValueBigStep)
-import Language.UntypedLC.BigStepNbeCBV (callByValueBigStepNbe)
-import Language.UntypedLC.Debruijn (DebruijnExpr, debruijnization)
-import Language.UntypedLC.SmallStepCBV (smallStepCBV)
-import Language.UntypedLC.Syntax qualified as LC
+-- import Language.LetPoly.BigStepNbeCBV (callByValueBigStepNbe)
+
+-- import Language.LetPoly.EvaluationResult
+-- import Language.LetPoly.SmallStepCBV (smallStepCBV)
+
+import GHC.Types.Unique.Supply qualified as GHC
+import Language.LetPoly.BigStepCBV (Value, callByValueBigStep)
+import Language.LetPoly.Syntax qualified as LC
+import Language.LetPoly.UntypedDeBruijn
 import Options.Applicative
 import System.Exit
 import System.IO (hPutStrLn, stderr)
@@ -59,24 +63,31 @@ opts =
         <> header "untypedLC-hs – a λ-calculus evaluator"
     )
 
-data Result = BigStepCBVResult Value | BigStepNbeCBVResult DebruijnExpr | SmallStepCBVResult DebruijnExpr deriving stock (Show)
+data Result = BigStepCBVResult Value deriving stock (Show)
 
 main :: IO ()
 main = do
-  chosen <- execParser opts -- Strategy, not String
+  _chosen <- execParser opts -- Strategy, not String
   putStrLn "Waiting for input on stdin..."
   input <- getContents
 
   ast <- either err pure $ LC.parse input
-
   T.putStrLn "---------De Bruijnize the Lambda Calculus---"
-  let debruijnExpr = debruijnization ast
-  T.putStrLn (T.pack (show debruijnExpr))
-
-  let normalized = case chosen of -- pattern-match on Strategy
-        BigStepCBV -> BigStepCBVResult $ callByValueBigStep debruijnExpr
-        BigStepNbeCBV -> BigStepNbeCBVResult $ callByValueBigStepNbe debruijnExpr
-        SmallStepCBV -> SmallStepCBVResult $ smallStepCBV debruijnExpr
+  untypedDebruijnExpr <- either (\x -> err $ show x) pure $ debruijnization ast
+  T.putStrLn (T.pack (show untypedDebruijnExpr))
+  T.putStrLn "---------Generating Constraints for the De Bruijnization Expression------"
+  uniqueSupplies <- GHC.listSplitUniqSupply <$> GHC.mkSplitUniqSupply 'X'
+  (_typ, constraints) <- either (\x -> err $ show x) pure $ genConstraint untypedDebruijnExpr uniqueSupplies
+  T.putStrLn (T.pack (show constraints))
+  T.putStrLn "---------Unifying Constraints for the De Bruijnization Expression------"
+  unifiedConstraints <- either (\x -> err $ show x) pure $ unify constraints
+  T.putStrLn (T.pack (show unifiedConstraints))
+  T.putStrLn "---------Evaluating the De Bruijnization Expression------"
+  let normalized = BigStepCBVResult $ callByValueBigStep untypedDebruijnExpr
+  -- let normalized = case chosen of -- pattern-match on Strategy
+  --       BigStepCBV -> BigStepCBVResult $ callByValueBigStep debruijnExpr
+  --       BigStepNbeCBV -> BigStepNbeCBVResult $ callByValueBigStepNbe debruijnExpr
+  --       SmallStepCBV -> SmallStepCBVResult $ smallStepCBV debruijnExpr
   ok
   T.putStrLn "---------After the Evaluation---------------"
   T.putStrLn (T.pack (show normalized))

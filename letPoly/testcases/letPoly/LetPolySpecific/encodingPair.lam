@@ -1,0 +1,5 @@
+let pair = lam x . lam y . lam k . k x y in
+let fst  = lam p . p (lam x . lam y . x) in
+let snd  = lam p . p (lam x . lam y . y) in
+let test = fst ((pair (zero)) (zero)) in
+test

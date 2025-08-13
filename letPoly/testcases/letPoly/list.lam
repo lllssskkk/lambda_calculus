@@ -1,0 +1,3 @@
+let x = cons (zero) (nil) in
+let y = cons (succ (zero)) x in 
+y 

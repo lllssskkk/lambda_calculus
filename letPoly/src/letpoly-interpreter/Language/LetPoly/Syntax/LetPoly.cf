@@ -1,0 +1,91 @@
+
+-- programs ------------------------------------------------
+
+entrypoints Prog ;
+
+Program.   Prog ::= Term ;
+
+
+
+-- Atoms -----------------------------------------------------
+
+
+AVar.      Atom ::= Ident;
+
+ATerm.     Atom  ::= "(" Term ")";
+
+ACons.     Atom ::= "cons" ;
+
+-- Expression ----------------------------------------------
+ApplicationAtom.  Application ::= Atom;
+
+AApplication.     Application ::= Application Atom;
+
+
+
+-- Term ---------------------------------------------------------------
+
+ApplicationTerm.     Term ::= Application;
+
+LetInTerm.           Term ::= "let" Ident "=" Term "in" Term;
+
+LambdaAbsTerm.       Term ::= "lam" Ident "." Term;
+
+TrueTerm.            Term ::= "true";
+
+FalseTerm.           Term ::= "false";
+
+IfTerm.              Term ::= "if" Term "then" Term "else" Term;
+
+SuccTerm.            Term ::= "succ" Term;
+
+ZeroTerm.            Term ::= "zero";
+
+PredTerm.            Term ::= "pred" Term; 
+
+IsZeroTerm.          Term ::= "isZero" Term; 
+
+PairTerm.            Term ::= "{" Term "," Term "}";
+
+FstTerm.             Term ::= "first" Term; 
+
+SndTerm.             Term ::= "second" Term;
+
+NilTerm.             Term ::= "nil" ;
+
+IsNilTerm.           Term ::= "isnil" Term;
+
+HeadTerm.            Term ::= "head" Term;
+
+TailTerm.            Term ::= "tail" Term;
+
+FixTerm.             Term ::= "fix" Term; 
+
+IsSuccTerm.          Term ::= "isSucc" Term; 
+
+IsPredTerm.          Term ::= "isPred" Term;
+
+
+
+-- Types ---------------------------------------------------
+-- Lowest precedence (whole Type)
+Arrow.    Type  ::= BaseType "->" Type ;
+Base.     Type  ::= BaseType ;
+
+
+-- Higher precedence
+Pair.     BaseType  ::= "{" Type "," Type "}" ;
+Nat.      BaseType  ::= "Nat" ;
+Bool.     BaseType  ::= "Bool" ;
+ListT.    BaseType  ::= "[" Type "]" ;
+
+
+-- comments ------------------------------------------------
+
+comment    "#" ;
+
+comment    "//" ;
+
+comment    "/*" "*/" ;
+
+-- Tokens --------------------------------------------------

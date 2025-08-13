@@ -1,0 +1,31 @@
+let fixPlusGenerator = lam ie . lam x  . lam y  . if isZero y then x else (if (isSucc y) then ie (succ x) (pred y) else ie (pred x) (succ y)) in 
+let plus = fix fixPlusGenerator in
+let fixMinusGenerator = lam ie . lam x  . lam y  . if isZero y then x else (if (isSucc y) then ie (pred x) (pred y) else ie (succ x) (succ y)) in 
+let minus = fix fixMinusGenerator in 
+let fixNegateGenerator = lam ie . lam x  . if isZero x then x else (if (isSucc x) then ((pred (ie (pred x)))) else ((succ (ie (succ x))))) in 
+let negate = fix fixNegateGenerator in
+let fixMultiplicationGenerator = lam ie . lam x  . lam y  . lam accumulator  . 
+  if isZero y 
+    then accumulator 
+    else (if (isSucc y) 
+              then (if (isSucc x)
+                      then ie x (pred y) ((plus accumulator) x)
+                      else ie x (pred y) ((plus accumulator) x))
+              else (if (isSucc x)
+                      then (ie x (succ y) ((plus accumulator) (negate x)))
+                      else (ie x (succ y) ((plus accumulator) (negate x)))
+                      )) in 
+let mul = lam x  . lam y  . ((((fix fixMultiplicationGenerator) x) y) (zero))  in
+let fixFactGenerator =
+      lam ie  .                    
+      lam n  .
+        if isZero n
+          then succ zero                     
+          else ((mul n) (ie (pred n)) ) 
+in
+let fact = fix fixFactGenerator in
+let one = succ (zero) in 
+let two = succ one in 
+let three = succ two in 
+let negativeThree = pred (pred (pred zero)) in
+fact three

@@ -1,0 +1,7 @@
+let f0 = lam x . { x,x } in
+let f1 = lam y . f0 (f0 y) in
+let f2 = lam y . f1 (f1 y) in
+let f3 = lam y . f2 (f2 y) in
+let f4 = lam y . f3 (f3 y) in
+let f5 = lam y . f4 (f4 y) in
+(f5 (lam z . z))

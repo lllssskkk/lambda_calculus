@@ -12,7 +12,7 @@ cabal-version:   3.4
 --   http://haskell.org/cabal/users-guide/
 --
 -- The name of the package.
-name:            untypedLC-hs
+name:            LetPoly-hs
 
 -- The package version.
 -- See the Haskell package versioning policy (PVP) for standards
@@ -60,11 +60,8 @@ flag dev
 
 common warnings
   ghc-options:
-    -Wall -Wcompat -Wincomplete-uni-patterns
-    -Wmissing-deriving-strategies -Wredundant-constraints
-    -Wmissing-home-modules
-
-  --  -Wmissing-export-lists -fwarn-unused-imports
+    -Wall -Wcompat -Wincomplete-uni-patterns -Wredundant-constraints
+    -Wmissing-home-modules -fwarn-unused-imports
 
   if !flag(dev)
     ghc-options: -Werror
@@ -75,18 +72,17 @@ library
 
   -- Modules exported by the library.
   exposed-modules:
-    Language.UntypedLC.BigStepCBV
-    Language.UntypedLC.BigStepNbeCBV
-    Language.UntypedLC.Debruijn
-    Language.UntypedLC.SmallStepCBV
-    Language.UntypedLC.Syntax
+    Language.LetPoly.BigStepCBV
+    Language.LetPoly.Common
+    Language.LetPoly.Syntax
+    Language.LetPoly.UntypedDeBruijn
 
   -- Modules included in this library but not exported.
   other-modules:
-    Language.UntypedLC.Syntax.Generated.AbsUntypedLC
-    Language.UntypedLC.Syntax.Generated.LexUntypedLC
-    Language.UntypedLC.Syntax.Generated.ParUntypedLC
-    Language.UntypedLC.Syntax.Generated.PrintUntypedLC
+    Language.LetPoly.Syntax.Generated.AbsLetPoly
+    Language.LetPoly.Syntax.Generated.LexLetPoly
+    Language.LetPoly.Syntax.Generated.ParLetPoly
+    Language.LetPoly.Syntax.Generated.PrintLetPoly
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
@@ -96,10 +92,12 @@ library
     , array       ^>=0.5.8.0
     , base        ^>=4.20.1.0
     , containers  ^>=0.7
+    , ghc         ^>=9.10.2
     , mtl         ^>=2.3.1
+    , text        ^>=2.1.2
 
   -- Directories containing source files.
-  hs-source-dirs:   src/untypedLC-interpreter
+  hs-source-dirs:   src/letpoly-interpreter
 
   -- Base language which the package is written in.
   default-language: GHC2024
@@ -108,7 +106,7 @@ library
 --   , alex:alex
 --   , happy:happy
 
-executable untypedLC-hs
+executable LetPoly-hs
   -- Import common warning flags.
   import:           warnings
 
@@ -124,9 +122,10 @@ executable untypedLC-hs
   -- Other library packages from which modules are imported.
   build-depends:
     , base                  ^>=4.20.1.0
+    , ghc                   ^>=9.10.2
+    , LetPoly-hs
     , optparse-applicative  ^>=0.18.1.0
     , text                  ^>=2.1.2
-    , untypedLC-hs
 
   -- Directories containing source files.
   hs-source-dirs:   app

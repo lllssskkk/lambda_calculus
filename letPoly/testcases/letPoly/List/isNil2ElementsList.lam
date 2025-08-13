@@ -1,0 +1,1 @@
+isnil (cons (zero) (nil))

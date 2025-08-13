@@ -1,0 +1,4 @@
+let id = lam x . x in 
+let one = id (succ (zero)) in
+let list = cons  (succ (succ zero)) (cons  (succ (succ zero)) (cons  (succ (succ zero)) (cons  (zero) (nil ))))
+in id (list) 

@@ -1,0 +1,1 @@
+if ((lam p . p (lam x . lam y . x)) ((lam x . lam y . lam k . k x y) (zero) (zero))) then zero else zero
